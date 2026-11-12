@@ -15,6 +15,11 @@ DEFAULT_CONTEXTS: dict[str, str] = {
 }
 DEFAULT_NAMESPACE = "attendance"
 OWN_PACKAGE = os.environ.get("ATTENDANCE_OWN_PACKAGE", "co.il.")
+SECRET_NAME = os.environ.get("ATTENDANCE_SECRET", "attendance-secrets")
+POSTGRES_SERVICE = os.environ.get("ATTENDANCE_POSTGRES_SERVICE", "svc/postgres")
+POSTGRES_DATABASE = os.environ.get("ATTENDANCE_POSTGRES_DB", "attendance")
+POSTGRES_USER = os.environ.get("ATTENDANCE_POSTGRES_USER", "postgres")
+POSTGRES_PASSWORD_KEY = os.environ.get("ATTENDANCE_POSTGRES_PASSWORD_KEY", "POSTGRES_PASSWORD")
 
 
 @dataclass(frozen=True)

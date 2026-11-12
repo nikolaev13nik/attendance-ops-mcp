@@ -9,6 +9,7 @@ from attendance_ops_mcp.config import ChosenEnv, EnvParam, Target, target_for
 from attendance_ops_mcp.kube import find_pod, kubectl, kubectl_json, list_pods, service_of
 from attendance_ops_mcp.logformat import compact_line
 from attendance_ops_mcp.server import mcp
+from attendance_ops_mcp.tables import format_table
 from attendance_ops_mcp.timeutil import age, minutes_since, parse_time
 
 MAX_LOG_LINES = 500
@@ -72,11 +73,6 @@ def describe_pod(pod: dict[str, Any]) -> tuple[list[str], list[str]]:
     if restarted_at is not None and minutes_since(restarted_at) <= RECENT_RESTART_MINUTES:
         warnings.append(f"{service_of(pod)} restarted {age(finished_at)} ago ({reason})")
     return row, warnings
-
-
-def format_table(header: list[str], rows: list[list[str]]) -> list[str]:
-    widths = [max(len(row[i]) for row in [header, *rows]) for i in range(len(header))]
-    return ["  ".join(cell.ljust(width) for cell, width in zip(row, widths)).rstrip() for row in [header, *rows]]
 
 
 async def cpu_requests_text(target: Target, nodes: list[dict[str, Any]]) -> str:
