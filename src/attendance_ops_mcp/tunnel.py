@@ -92,6 +92,12 @@ def kill_quietly(process: asyncio.subprocess.Process) -> None:
 tunnels: dict[tuple[str, str, int], Tunnel] = {}
 
 
+async def close_other_contexts(resource: str, remote_port: int, keep_context: str) -> None:
+    for (context, other_resource, other_port), tunnel in tunnels.items():
+        if other_resource == resource and other_port == remote_port and context != keep_context:
+            await tunnel.close()
+
+
 def get_tunnel(target: Target, resource: str, remote_port: int, local_port: int = 0) -> Tunnel:
     key = (target.context, resource, remote_port)
     if key not in tunnels:

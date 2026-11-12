@@ -20,6 +20,8 @@ POSTGRES_SERVICE = os.environ.get("ATTENDANCE_POSTGRES_SERVICE", "svc/postgres")
 POSTGRES_DATABASE = os.environ.get("ATTENDANCE_POSTGRES_DB", "attendance")
 POSTGRES_USER = os.environ.get("ATTENDANCE_POSTGRES_USER", "postgres")
 POSTGRES_PASSWORD_KEY = os.environ.get("ATTENDANCE_POSTGRES_PASSWORD_KEY", "POSTGRES_PASSWORD")
+KAFKA_SERVICE = os.environ.get("ATTENDANCE_KAFKA_SERVICE", "svc/kafka")
+KAFKA_EXTERNAL_PORT = int(os.environ.get("ATTENDANCE_KAFKA_EXTERNAL_PORT", "9094"))
 
 
 @dataclass(frozen=True)

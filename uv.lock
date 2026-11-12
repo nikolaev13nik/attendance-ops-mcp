@@ -38,6 +38,7 @@ name = "attendance-ops-mcp"
 version = "0.1.0"
 source = { editable = "." }
 dependencies = [
+    { name = "kafka-python" },
     { name = "mcp", extra = ["cli"] },
     { name = "psycopg", extra = ["binary"] },
 ]
@@ -49,6 +50,7 @@ dev = [
 
 [package.metadata]
 requires-dist = [
+    { name = "kafka-python", specifier = ">=3.0.13" },
     { name = "mcp", extras = ["cli"], specifier = ">=2.3.0" },
     { name = "psycopg", extras = ["binary"], specifier = ">=3.3.9" },
 ]
@@ -295,6 +297,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/19/74/a633ee74eb36c44aa6d1095e7cc5569bebf04342ee146178e2d36600708b/jsonschema_specifications-2025.9.1.tar.gz", hash = "sha256:b540987f239e745613c7a9176f3edb72b832a4ac465cf02712288397832b5e8d", size = 32855, upload-time = "2025-09-08T01:34:59.186Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/41/45/1a4ed80516f02155c51f51e8cedb3c1902296743db0bbc66608a0db2814f/jsonschema_specifications-2025.9.1-py3-none-any.whl", hash = "sha256:98802fee3a11ee76ecaca44429fda8a41bff98b00a0f2838151b113f210cc6fe", size = 18437, upload-time = "2025-09-08T01:34:57.871Z" },
+]
+
+[[package]]
+name = "kafka-python"
+version = "3.0.13"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/69/8f/7820b53ea017d615645cd29f5e73edf940906d20682b2b12506052a8a09b/kafka_python-3.0.13.tar.gz", hash = "sha256:27161a9f5e0620eb6ec88324e0b3bd16e86d85d204bd29f8b5e8da351f6d11d0", size = 512677, upload-time = "2026-11-06T01:33:25.702Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/3d/0a/b265b1243161b9777ea2fc28822f6f29a958299f9e19f6494098a0d02c5b/kafka_python-3.0.13-py3-none-any.whl", hash = "sha256:a415f1d0bf3c890aef37de6d6f7aa5f1f2d41aad320e8f8ce97b284c6a287b9d", size = 614308, upload-time = "2026-11-06T01:33:27.379Z" },
 ]
 
 [[package]]
