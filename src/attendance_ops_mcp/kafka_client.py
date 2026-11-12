@@ -7,7 +7,7 @@ from kafka.errors import KafkaError
 from mcp.server.mcpserver.exceptions import ToolError
 
 from attendance_ops_mcp.config import KAFKA_EXTERNAL_PORT, KAFKA_SERVICE, Target
-from attendance_ops_mcp.tunnel import close_other_contexts, get_tunnel
+from attendance_ops_mcp.tunnel import Tunnel, close_other_contexts, get_tunnel
 
 CLIENT_ID = "attendance-ops-mcp"
 REQUEST_TIMEOUT_MS = 15000
@@ -15,9 +15,7 @@ REQUEST_TIMEOUT_MS = 15000
 logging.getLogger("kafka").setLevel(logging.WARNING)
 
 
-async def kafka_bootstrap(target: Target) -> str:
-    await close_other_contexts(KAFKA_SERVICE, KAFKA_EXTERNAL_PORT, target.context)
-    tunnel = get_tunnel(target, KAFKA_SERVICE, KAFKA_EXTERNAL_PORT, local_port=KAFKA_EXTERNAL_PORT)
+async def kafka_bootstrap(tunnel: Tunnel) -> str:
     try:
         port = await tunnel.open()
     except ToolError as error:
@@ -32,11 +30,14 @@ async def kafka_bootstrap(target: Target) -> str:
 
 
 async def with_kafka[T](target: Target, work: Callable[[str], T]) -> T:
-    bootstrap = await kafka_bootstrap(target)
-    try:
-        return await asyncio.to_thread(work, bootstrap)
-    except KafkaError as error:
-        raise ToolError(f"{target.label} Kafka error: {error}") from error
+    await close_other_contexts(KAFKA_SERVICE, KAFKA_EXTERNAL_PORT, target.context)
+    tunnel = get_tunnel(target, KAFKA_SERVICE, KAFKA_EXTERNAL_PORT, local_port=KAFKA_EXTERNAL_PORT)
+    async with tunnel.lease():
+        bootstrap = await kafka_bootstrap(tunnel)
+        try:
+            return await asyncio.to_thread(work, bootstrap)
+        except KafkaError as error:
+            raise ToolError(f"{target.label} Kafka error: {error}") from error
 
 
 def new_admin(bootstrap: str) -> KafkaAdminClient:

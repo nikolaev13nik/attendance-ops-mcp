@@ -78,17 +78,18 @@ async def connect(target: Target) -> psycopg.AsyncConnection[Any]:
 
 
 async def run_query(target: Target, query: Query, params: dict[str, Any] | None = None, limit: int = 1000) -> QueryResult:
-    connection = await connect(target)
-    try:
-        async with connection.cursor() as cursor:
-            await cursor.execute(query, params, prepare=True)
-            if cursor.description is None:
-                return QueryResult([], [], False)
-            rows = await cursor.fetchmany(limit + 1)
-            columns = [column.name for column in cursor.description]
-            return QueryResult(columns, rows[:limit], len(rows) > limit)
-    except psycopg.Error as error:
-        raise ToolError(f"{target.label} Postgres error: {first_line(error)}") from error
-    finally:
-        await connection.rollback()
-        await connection.close()
+    async with get_tunnel(target, POSTGRES_SERVICE, POSTGRES_PORT).lease():
+        connection = await connect(target)
+        try:
+            async with connection.cursor() as cursor:
+                await cursor.execute(query, params, prepare=True)
+                if cursor.description is None:
+                    return QueryResult([], [], False)
+                rows = await cursor.fetchmany(limit + 1)
+                columns = [column.name for column in cursor.description]
+                return QueryResult(columns, rows[:limit], len(rows) > limit)
+        except psycopg.Error as error:
+            raise ToolError(f"{target.label} Postgres error: {first_line(error)}") from error
+        finally:
+            await connection.rollback()
+            await connection.close()

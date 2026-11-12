@@ -1,6 +1,9 @@
 import asyncio
 import atexit
+import os
 import re
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
 
 from mcp.server.mcpserver.exceptions import ToolError
 
@@ -10,6 +13,7 @@ from attendance_ops_mcp.kube import last_line
 FORWARDING = re.compile(r"Forwarding from 127\.0\.0\.1:(\d+)")
 START_TIMEOUT_SECONDS = 20
 STOP_TIMEOUT_SECONDS = 5
+IDLE_CLOSE_SECONDS = float(os.environ.get("ATTENDANCE_TUNNEL_IDLE_SECONDS", "60"))
 
 
 class Tunnel:
@@ -21,15 +25,44 @@ class Tunnel:
         self.process: asyncio.subprocess.Process | None = None
         self.port: int | None = None
         self.drain: asyncio.Task[None] | None = None
+        self.users = 0
+        self.idle_close: asyncio.Task[None] | None = None
+        self.lock = asyncio.Lock()
 
     @property
     def is_alive(self) -> bool:
         return self.process is not None and self.process.returncode is None
 
+    @asynccontextmanager
+    async def lease(self) -> AsyncIterator[None]:
+        self.users += 1
+        self.cancel_idle_close()
+        try:
+            yield
+        finally:
+            self.users -= 1
+            if self.users == 0 and self.is_alive:
+                self.idle_close = asyncio.create_task(self.close_when_idle())
+
+    def cancel_idle_close(self) -> None:
+        if self.idle_close is not None:
+            self.idle_close.cancel()
+            self.idle_close = None
+
+    async def close_when_idle(self) -> None:
+        await asyncio.sleep(IDLE_CLOSE_SECONDS)
+        self.idle_close = None
+        if self.users == 0:
+            await self.close()
+
     async def open(self) -> int:
+        async with self.lock:
+            return await self.start()
+
+    async def start(self) -> int:
         if self.is_alive and self.port is not None:
             return self.port
-        await self.close()
+        await self.stop()
         self.process = await asyncio.create_subprocess_exec(
             "kubectl", "--context", self.target.context, "-n", self.target.namespace,
             "port-forward", self.resource, f"{self.local_port}:{self.remote_port}",
@@ -41,7 +74,7 @@ class Tunnel:
         try:
             self.port = await asyncio.wait_for(self.read_port(), START_TIMEOUT_SECONDS)
         except (TimeoutError, ToolError) as error:
-            await self.close()
+            await self.stop()
             raise ToolError(
                 f"{self.target.label} could not open a tunnel to {self.resource}:{self.remote_port}: {error}"
             ) from error
@@ -64,6 +97,11 @@ class Tunnel:
         await asyncio.gather(discard(self.process.stdout), discard(self.process.stderr))
 
     async def close(self) -> None:
+        self.cancel_idle_close()
+        async with self.lock:
+            await self.stop()
+
+    async def stop(self) -> None:
         if self.drain is not None:
             self.drain.cancel()
         if self.is_alive:
