@@ -14,6 +14,7 @@ DEFAULT_CONTEXTS: dict[str, str] = {
     "prod": "gke_attendance-512211_me-west1-a_attendance",
 }
 DEFAULT_NAMESPACE = "attendance"
+OWN_PACKAGE = os.environ.get("ATTENDANCE_OWN_PACKAGE", "co.il.")
 
 
 @dataclass(frozen=True)

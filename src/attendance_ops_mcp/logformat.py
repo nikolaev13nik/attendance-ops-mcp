@@ -24,17 +24,22 @@ def single_line(text: str) -> str:
     return " ".join(text.split())
 
 
+def context_text(entry: dict[str, Any]) -> str:
+    context = [f"{label}={entry[field]}" for field, label in CONTEXT_FIELDS.items() if field in entry]
+    if "traceId" in entry:
+        context.append(f"trace={str(entry['traceId'])[:TRACE_ID_LENGTH]}")
+    return " ".join(context)
+
+
 def compact_entry(entry: dict[str, Any]) -> str:
     time = str(entry.get("@timestamp", ""))[11:19]
     level = str(entry.get("severity") or entry.get("level") or "")
     logger = short_logger(str(entry.get("logger_name", "")))
     message = single_line(str(entry.get("message", "")))
-    context = [f"{label}={entry[field]}" for field, label in CONTEXT_FIELDS.items() if field in entry]
-    if "traceId" in entry:
-        context.append(f"trace={str(entry['traceId'])[:TRACE_ID_LENGTH]}")
+    context = context_text(entry)
     line = f"{time} {level:<5} {logger}  {message}"
     if context:
-        line += f"  [{' '.join(context)}]"
+        line += f"  [{context}]"
     stack_trace = str(entry.get("stack_trace", ""))
     if stack_trace:
         line += f"  ↳ {single_line(stack_trace.splitlines()[0])}"
